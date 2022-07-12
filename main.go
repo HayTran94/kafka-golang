@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/Shopify/sarama"
 )
@@ -27,7 +28,7 @@ var (
 
 func init() {
 	flag.StringVar(&brokers, "brokers", "localhost:9092", "Kafka bootstrap brokers to connect to, as a comma separated list")
-	flag.StringVar(&group, "group", "group1", "Kafka consumer group definition")
+	flag.StringVar(&group, "group", "group-test-1", "Kafka consumer group definition")
 	flag.StringVar(&version, "version", "2.1.1", "Kafka cluster version")
 	flag.StringVar(&topics, "topics", "quickstart-events", "Kafka topics to be consumed, as a comma separated list")
 	flag.StringVar(&assignor, "assignor", "range", "Consumer group partition assignment strategy (range, roundrobin, sticky)")
@@ -66,6 +67,8 @@ func main() {
 	 * The Kafka cluster version has to be defined before the consumer/producer is initialized.
 	 */
 	config := sarama.NewConfig()
+	config.Consumer.Offsets.AutoCommit.Enable = false
+	config.Consumer.Offsets.Retention = time.Second * 15
 	config.Version = version
 
 	switch assignor {
@@ -77,10 +80,6 @@ func main() {
 		config.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategyRange
 	default:
 		log.Panicf("Unrecognized consumer group partition assignor: %s", assignor)
-	}
-
-	if oldest {
-		config.Consumer.Offsets.Initial = sarama.OffsetOldest
 	}
 
 	/**
